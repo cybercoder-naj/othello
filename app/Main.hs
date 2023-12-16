@@ -10,6 +10,9 @@ import Control.Monad.State
 import GHC.IO.Handle (hFlush, Handle)
 import GHC.IO.Handle.FD (stdout)
 import System.IO (hReady)
+import Data.Map (Map)
+import qualified Data.Map as M
+
 
 data IOState = IOState {
     coordinates :: (Int, Int)
@@ -17,6 +20,7 @@ data IOState = IOState {
     , quit :: Bool
 }
 
+-- UNUSED
 ifReadyDo :: Handle -> IO a -> IO (Maybe a)
 ifReadyDo hnd x = hReady hnd >>= f
    where f True = x >>= return . Just
@@ -48,53 +52,50 @@ runGame = do
         liftIO $ putStr "Enter your action (Use ? for help): "
         liftIO $ hFlush stdout
 
-        input <- liftIO getLine
+        actions <- liftIO getLine
         liftIO $ putStr "\n"
 
-        handleAction $ head input
+        handleActions actions
         runGame
 
-handleAction :: Char -> StateT (Types.RawState, IOState) IO ()
-handleAction 'q' = do 
-    (gState, ioState) <- get
-    put (gState, ioState { quit = True }) 
-handleAction 'j' = do 
-    (gState, ioState) <- get
-    put (gState, ioState { coordinates = goDown (coordinates ioState) })
-    where
-        goDown (x, y)
-          | x == 7    = (7, y)
-          | otherwise = (x + 1, y)
-handleAction 'k' = do 
-    (gState, ioState) <- get
-    put (gState, ioState { coordinates = goUp (coordinates ioState) })
-    where
-        goUp (x, y)
-          | x == 0    = (0, y)
-          | otherwise = (x - 1, y)
-handleAction 'h' = do 
-    (gState, ioState) <- get
-    put (gState, ioState { coordinates = goLeft (coordinates ioState) })
-    where
-        goLeft (x, y)
-          | y == 0    = (x, 0)
-          | otherwise = (x, y - 1)
-handleAction 'l' = do 
-    (gState, ioState) <- get
-    put (gState, ioState { coordinates = goRight (coordinates ioState) })
-    where
-        goRight (x, y)
-          | y == 7    = (x, 7)
-          | otherwise = (x, y + 1)
-handleAction 'p' = do 
-    (gState, ioState) <- get
-    -- TODO need to do the turn here
-    put (gState, ioState) 
-handleAction 's' = do
-    (gState, ioState) <- get
-    -- TODO need to show the targets
-    put (gState, ioState) 
-handleAction _    = undefined
+handleActions :: String -> StateT (Types.RawState, IOState) IO ()
+handleActions actions = do
+    if null actions then
+        return ()
+    else do
+        let (a : as) = actions
+
+        if M.notMember a transformer then 
+            return ()
+        else do 
+            modify (transformer M.! a)
+            handleActions as
+            where
+                transformer :: Map Char ((Types.RawState, IOState) -> (Types.RawState, IOState))
+                transformer = M.fromList [
+                    ('q', \(g, io) -> (g, io { quit = True })), 
+                    ('j', \(g, io) -> (g, io { coordinates = goDown $ coordinates io })), 
+                    ('k', \(g, io) -> (g, io { coordinates = goUp $ coordinates io })), 
+                    ('h', \(g, io) -> (g, io { coordinates = goLeft $ coordinates io })), 
+                    ('l', \(g, io) -> (g, io { coordinates = goRight $ coordinates io })), 
+                    ('p', \(g, io) -> (g, io)), 
+                    ('s', \(g, io) -> (g, io { showTargets = not $ showTargets io }))]
+
+                goDown (x, y)
+                    | x == 7    = (7, y)
+                    | otherwise = (x + 1, y)
+
+                goUp (x, y)
+                    | x == 0    = (0, y)
+                    | otherwise = (x - 1, y)
+
+                goLeft (x, y)
+                    | y == 0    = (x, 0)
+                    | otherwise = (x, y - 1)
+
+                goRight (x, y)
+                    | y == 7    = (x, 7)
+                    | otherwise = (x, y + 1)
 
 printBoard :: Types.RawState -> IOState -> IO ()
 printBoard (_, Types.B cells) ioState = do
