@@ -1,0 +1,39 @@
+cabal-version:      2.4
+name:               othello
+version:            0.1.0.0
+
+-- A short (one-line) description of the package.
+-- synopsis:
+
+-- A longer description of the package.
+-- description:
+
+-- A URL where users can report bugs.
+-- bug-reports:
+license:            MIT
+license-file:       LICENSE
+author:             Nishant Aanjaney Jalan
+maintainer:         cybercoder.nishant@gmail.com
+
+-- A copyright notice.
+-- copyright:
+-- category:
+extra-source-files: CHANGELOG.md
+
+common common-all
+    build-depends:
+      base ^>=4.17.2.0,
+      mtl   >=2.2.2
+    default-language: Haskell2010
+    ghc-options:      -Wall 
+
+library
+    import:          common-all
+    exposed-modules: Lib
+    hs-source-dirs:  src
+
+executable othello
+    import:         common-all
+    main-is:        Main.hs
+    other-modules:  Lib, Types
+    hs-source-dirs: app, src
