@@ -17,9 +17,3 @@ instance Show Cell where
   show White  = "W"
   show Empty  = "-"
   show Target = "*"
-
-join :: String -> [Cell] -> String
-join sep = foldl (\acc cell -> show cell ++ sep ++ acc) ""
-
-instance Show Board where
-  show (B cells) = concatMap ((++ "\n") . join " ") cells
