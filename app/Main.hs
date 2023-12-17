@@ -20,6 +20,9 @@ data IOState = IOState {
     , quit :: Bool
 }
 
+type RawState       = (Types.RawState, IOState)
+type CombinedState  = StateT RawState IO
+
 -- UNUSED
 ifReadyDo :: Handle -> IO a -> IO (Maybe a)
 ifReadyDo hnd x = hReady hnd >>= f
@@ -39,16 +42,16 @@ main = do
     _ <- runStateT runGame (gState, ioState)
     pure ()
 
-runGame :: StateT (Types.RawState, IOState) IO ()
+runGame :: CombinedState ()
 runGame = do
-    (gState, ioState) <- get
+    rawState@(_, ioState) <- get
     if quit ioState then do
         return ()
     else do
         liftIO clearFromCursorToScreenBeginning
         liftIO $ setCursorPosition 0 0
 
-        liftIO $ printBoard gState ioState
+        liftIO $ printBoard rawState
         liftIO $ putStr "Enter your action (Use ? for help): "
         liftIO $ hFlush stdout
 
@@ -58,7 +61,7 @@ runGame = do
         handleActions actions
         runGame
 
-handleActions :: String -> StateT (Types.RawState, IOState) IO ()
+handleActions :: String -> CombinedState ()
 handleActions actions = do
     if null actions then
         return ()
@@ -71,7 +74,7 @@ handleActions actions = do
             modify (transformer M.! a)
             handleActions as
             where
-                transformer :: Map Char ((Types.RawState, IOState) -> (Types.RawState, IOState))
+                transformer :: Map Char (RawState -> RawState)
                 transformer = M.fromList [
                     ('q', \(g, io) -> (g, io { quit = True })), 
                     ('j', \(g, io) -> (g, io { coordinates = goDown $ coordinates io })), 
@@ -97,8 +100,8 @@ handleActions actions = do
                     | y == 7    = (x, 7)
                     | otherwise = (x, y + 1)
 
-printBoard :: Types.RawState -> IOState -> IO ()
-printBoard (_, Types.B cells) ioState = do
+printBoard :: RawState -> IO ()
+printBoard ((_, Types.B cells), ioState) = do
     let (x, y) = coordinates ioState
 
     let printCell cell = do {
