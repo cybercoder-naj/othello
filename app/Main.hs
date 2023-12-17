@@ -34,8 +34,6 @@ main = do
     clearFromCursorToScreenBeginning
     setCursorPosition 0 0
 
-    putStrLn "======== Welcome to Othello (Battle Reversi) ========"
-    putStrLn "======== Player 1 is Black and they start ========\n"
     let gState = Lib.initGameState
     let ioState = IOState (0, 0) False
 
@@ -45,11 +43,13 @@ main = do
 runGame :: CombinedState ()
 runGame = do
     rawState@(gState, ioState) <- get
-    if quit ioState then do
+    if quit ioState || terminated gState then do
         return ()
     else do
         liftIO clearFromCursorToScreenBeginning
         liftIO $ setCursorPosition 0 0
+        liftIO $ putStrLn "======== Welcome to Othello (Battle Reversi) ========"
+        liftIO $ putStrLn "======== Player 1 is Black and they start ========\n"
 
         liftIO $ printBoard rawState
 
@@ -63,8 +63,21 @@ runGame = do
         actions <- liftIO getLine
         liftIO $ putStr "\n"
 
-        handleActions actions
-        runGame
+        canPlay <- checkTargets
+        if canPlay then do
+            handleActions actions
+            runGame
+        else do
+            modify (\((Types.N c, board), io) -> ((Types.N (c + 1), board), io))
+            runGame
+
+checkTargets :: CombinedState Bool
+checkTargets = do
+    ((_, Types.B cells), _) <- get
+    return $ any (any Utils.isTarget) cells
+
+terminated :: Types.GameState -> Bool
+terminated (_, Types.B cells) = not . any (any Utils.isEmpty) $ cells
 
 handleActions :: String -> CombinedState ()
 handleActions actions = do
@@ -73,7 +86,11 @@ handleActions actions = do
     else do
         let (a : as) = actions
 
-        if M.notMember a transformer then
+        if a == '?' then do
+            liftIO $ print a
+            liftIO printHelp
+            return ()
+        else if M.notMember a transformer then
             return ()
         else do
             modify (transformer M.! a)
@@ -103,6 +120,24 @@ handleActions actions = do
                 goRight (x, y)
                     | y == 7    = (x, 7)
                     | otherwise = (x, y + 1)
+
+printHelp :: IO ()
+printHelp = do
+    liftIO clearFromCursorToScreenBeginning
+    liftIO $ setCursorPosition 0 0
+
+    putStrLn "These are the keybindings:\n"
+    putStrLn " j: go up"
+    putStrLn " k: go down"
+    putStrLn " h: go left"
+    putStrLn " l: go right"
+    putStrLn " q: quit"
+    putStrLn " p: place piece on target"
+    putStrLn " ?: print this help\n"
+
+    putStrLn "Press <Enter> to continue"
+    _ <- getLine
+    return ()
 
 printBoard :: RawState -> IO ()
 printBoard ((_, Types.B cells), ioState) = do
