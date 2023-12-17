@@ -6,7 +6,7 @@ import Control.Monad.State
 import Data.Maybe (isJust)
 
 initGameState :: GameState
-initGameState = findTargets (N 0, B cells) 
+initGameState = findTargets (N 0, B cells)
   where
     cells = replicate 3 (replicate 8 Empty) ++
       [replicate 3 Empty ++ [Black, White] ++ replicate 3 Empty] ++
@@ -14,7 +14,7 @@ initGameState = findTargets (N 0, B cells)
       replicate 3 (replicate 8 Empty)
 
 place :: (Int, Int) -> State GameState ()
-place (x, y) = do 
+place (x, y) = do
   (N c, B cells) <- get
 
   pure ()
@@ -36,8 +36,8 @@ findTargets (c, B cells) = (c, B mappedCells)
     player   = if Utils.even c then Black else White
 
     target :: (Int, Int) -> (Int, Int) -> Bool
-    target coor diff = isJust (go coor diff)
-      where 
+    target = (isJust .) . go
+      where
         go :: (Int, Int) -> (Int, Int) -> Maybe Cell
         go (x, y) (dx, dy) = do
           adj <- getCell (x + dx) (y + dy)
