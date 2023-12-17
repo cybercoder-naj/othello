@@ -7,7 +7,7 @@ import Control.Monad.Writer
 import Data.Maybe (isJust)
 
 initGameState :: GameState
-initGameState = findTargets (N 0, B cells)
+initGameState = findTargets (N 0, B cells, (2, 2))
   where
     cells = replicate 3 (replicate 8 Empty) ++
       [replicate 3 Empty ++ [Black, White] ++ replicate 3 Empty] ++
@@ -16,13 +16,11 @@ initGameState = findTargets (N 0, B cells)
 
 place :: (Int, Int) -> State GameState ()
 place (x, y) = do
-  (N c, B cells) <- get
+  (N c, B cells, (nB, nW)) <- get
 
-  unless (Utils.isTarget $ cells !! x !! y) $ return ()
-
-  put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
-  modify findTargets
-  pure ()
+  when (Utils.isTarget $ cells !! x !! y) $ do
+    put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells), (nB, nW))
+    modify (calculateNumPieces . findTargets)
 
   where
     player c = if Prelude.even c then Black else White
@@ -68,7 +66,7 @@ changeCell x y pl =
   )
 
 findTargets :: GameState -> GameState
-findTargets (c, B cells) = (c, B mappedCells)
+findTargets (c, B cells, nBW) = (c, B mappedCells, nBW)
   where
     mappedCells :: [[Cell]]
     mappedCells =
@@ -96,6 +94,13 @@ findTargets (c, B cells) = (c, B mappedCells)
               Nothing
             else go (x + dx, y + dy) (dx, dy)
           else Nothing
+
+calculateNumPieces :: GameState -> GameState
+calculateNumPieces (c, B cells, _) = (c, B cells, (sum $ map (count (== Black)) cells, sum $ map (count (== White)) cells))
+  where
+    count :: (a -> Bool) -> [a] -> Int
+    count = (length .) . filter
+
 
 directions :: [(Int, Int)]
 directions = [ (1, 0),(0, 1), (0, -1), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]

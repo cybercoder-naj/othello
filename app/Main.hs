@@ -53,7 +53,7 @@ runGame = do
 
         liftIO $ printBoard rawState
 
-        if Utils.even (fst gState) then
+        if Utils.even (fst3 gState) then
             liftIO $ putStr "Player 1: "
         else
             liftIO $ putStr "Player 2: "
@@ -68,16 +68,19 @@ runGame = do
             handleActions actions
             runGame
         else do
-            modify (\((Types.N c, board), io) -> ((Types.N (c + 1), board), io))
+            modify (\((Types.N c, board, nBW), io) -> ((Types.N (c + 1), board, nBW), io))
             runGame
+
+fst3 :: Types.GameState -> Types.Counter 
+fst3 (c, _, _) = c
 
 checkTargets :: CombinedState Bool
 checkTargets = do
-    ((_, Types.B cells), _) <- get
+    ((_, Types.B cells, _), _) <- get
     return $ any (any Utils.isTarget) cells
 
 terminated :: Types.GameState -> Bool
-terminated (_, Types.B cells) = not . any (any Utils.isEmpty) $ cells
+terminated (_, _, (nB, nW)) = nB + nW == 8 * 8
 
 handleActions :: String -> CombinedState ()
 handleActions actions = do
@@ -140,7 +143,7 @@ printHelp = do
     return ()
 
 printBoard :: RawState -> IO ()
-printBoard ((_, Types.B cells), ioState) = do
+printBoard ((_, Types.B cells, (nB, nW)), ioState) = do
     let (x, y) = coordinates ioState
 
     let printCell cell = do {
@@ -159,6 +162,12 @@ printBoard ((_, Types.B cells), ioState) = do
     let outerFor i row = forEachIndexed innerFor (map (i,) row) >> putStrLn ""
 
     forEachIndexed outerFor cells
+
+    putStr "Black: "
+    print nB 
+    putStr "White: "
+    print nW
+    putStrLn ""
 
 forEach :: (a -> IO ()) -> [a] -> IO ()
 forEach f = foldr ((>>) . f) (pure ())

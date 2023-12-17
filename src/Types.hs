@@ -10,7 +10,7 @@ newtype Counter = N Int
 
 newtype Board   = B [[Cell]]
 
-type GameState = (Counter, Board)
+type GameState = (Counter, Board, (Int, Int))
 
 instance Show Cell where
   show Black  = "B"
