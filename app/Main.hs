@@ -146,14 +146,15 @@ printBoard :: RawState -> IO ()
 printBoard ((_, Types.B cells, (nB, nW)), ioState) = do
     let (x, y) = coordinates ioState
 
+    setSGR [SetColor Background Dull Green]
     let printCell cell = do {
         putStr . show $ cell;
     }
 
     let innerFor j (i, cell) = if i == x && j == y then do {
-        setSGR [SetColor Background Vivid White, SetColor Foreground Vivid Black];
+        setSGR [SetColor Background Vivid Yellow];
         printCell cell;
-        setSGR [Reset];
+        setSGR [SetColor Background Dull Green];
         putStr " ";
     } else do {
         printCell cell;
@@ -162,6 +163,7 @@ printBoard ((_, Types.B cells, (nB, nW)), ioState) = do
     let outerFor i row = forEachIndexed innerFor (map (i,) row) >> putStrLn ""
 
     forEachIndexed outerFor cells
+    setSGR [Reset]
 
     putStr "Black: "
     print nB 
