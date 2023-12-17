@@ -4,6 +4,10 @@ import Control.Monad.State (State)
 
 data Cell = Black | White | Empty | Target
 
+isTarget :: Cell -> Bool
+isTarget Target = True
+isTarget _      = False 
+
 newtype Counter = N Int
   deriving Show
 newtype Board   = B [[Cell]]

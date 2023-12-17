@@ -101,13 +101,22 @@ printBoard :: Types.RawState -> IOState -> IO ()
 printBoard (_, Types.B cells) ioState = do
     let (x, y) = coordinates ioState
 
+    let printCell cell = do {
+        if Types.isTarget cell && showTargets ioState then 
+            putStr . show $ cell;
+        else if Types.isTarget cell && not (showTargets ioState) then
+            putStr . show $ Types.Empty;
+        else 
+            putStr . show $ cell;
+    }
+
     let innerFor j (i, cell) = if i == x && j == y then do {
         setSGR [SetColor Background Vivid White, SetColor Foreground Vivid Black];
-        putStr . show $ cell;
+        printCell cell;
         setSGR [Reset];
         putStr " ";
     } else do {
-        putStr . show $ cell;
+        printCell cell;
         putStr " ";
     }
     let outerFor i row = forEachIndexed innerFor (map (i,) row) >> putStrLn ""
