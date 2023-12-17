@@ -3,7 +3,8 @@ module Lib where
 import Types
 import qualified Utils
 import Control.Monad.State
-import Data.Maybe (isJust)
+import Control.Monad (when)
+import Data.Maybe (isJust, fromJust, isNothing)
 
 initGameState :: GameState
 initGameState = findTargets (N 0, B cells)
@@ -20,41 +21,44 @@ place (x, y) = do
   if not . Utils.isTarget $ cells !! x !! y then
     return ()
   else do
-    put (N (c + 1), putPlayer x y c cells)
+    put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
     modify findTargets
   pure ()
 
   where
-    putPlayer :: Int -> Int -> Int -> [[Cell]] -> Board
-    putPlayer x y pl cells =
-      B (Utils.forEachCell (\i j cell ->
-        if x == i && y == j then 
-          player pl 
-        else if Utils.isTarget cell then 
-          Empty 
-        else cell   
-      ) cells)
+    putPlayer :: Int -> Int -> Cell -> Cell -> State [[Cell]] ()
+    putPlayer x y pl op = do
+      modify (changeCell x y pl)
+      cells <- get
+      return ()
+
+    tryTurnPiece :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> [[Cell]]
+    tryTurnPiece x y (dx, dy) pl op cells = undefined
+
+    changeCell :: Int -> Int -> Cell -> [[Cell]] -> [[Cell]]
+    changeCell x y pl =
+      Utils.forEachCell (\i j cell ->
+        if x == i && y == j then
+          pl
+        else if Utils.isTarget cell then
+          Empty
+        else cell
+      )
 
     player c = if Prelude.even c then Black else White
+    opponent c = if Prelude.even c then White else Black
 
 findTargets :: GameState -> GameState
 findTargets (c, B cells) = (c, B mappedCells)
   where
     mappedCells :: [[Cell]]
-    mappedCells = 
-      Utils.forEachCell (\i j cell -> 
-        if Utils.isEmpty cell && any (target (i, j)) directions then 
-          Target 
-        else 
-          cell 
+    mappedCells =
+      Utils.forEachCell (\i j cell ->
+        if Utils.isEmpty cell && any (target (i, j)) directions then
+          Target
+        else
+          cell
       ) cells
-
-    directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
-
-    getCell :: Int -> Int -> Maybe Cell
-    getCell i j
-      | i < 0 || j < 0 || i >= 8 || j >= 8 = Nothing
-      | otherwise                          = Just (cells !! i !! j)
 
     opponent = if Utils.even c then White else Black
     player   = if Utils.even c then Black else White
@@ -64,8 +68,8 @@ findTargets (c, B cells) = (c, B mappedCells)
       where
         go :: (Int, Int) -> (Int, Int) -> Maybe Cell
         go (x, y) (dx, dy) = do
-          adj <- getCell (x + dx) (y + dy)
-          cell <- getCell (x + 2 * dx) (y + 2 * dy)
+          adj <- getCell (x + dx) (y + dy) cells
+          cell <- getCell (x + 2 * dx) (y + 2 * dy) cells
           if adj == opponent then
             if cell == player then
               return Target
@@ -73,3 +77,10 @@ findTargets (c, B cells) = (c, B mappedCells)
               Nothing
             else go (x + dx, y + dy) (dx, dy)
           else Nothing
+
+directions = [ (1, 0),(0, 1), (0, -1), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
+
+getCell :: Int -> Int -> [[Cell]] -> Maybe Cell
+getCell i j cells
+  | i < 0 || j < 0 || i >= 8 || j >= 8 = Nothing
+  | otherwise                          = Just (cells !! i !! j)
