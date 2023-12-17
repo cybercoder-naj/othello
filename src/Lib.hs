@@ -21,32 +21,32 @@ place (x, y) = do
   if not . Utils.isTarget $ cells !! x !! y then
     return ()
   else do
-    put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
+    put (N (c + 1), B (putPlayer x y (player c) (opponent c) cells))
     modify findTargets
   pure ()
 
   where
-    putPlayer :: Int -> Int -> Cell -> Cell -> State [[Cell]] ()
-    putPlayer x y pl op = do
-      modify (changeCell x y pl)
-      cells <- get
-      return ()
-
-    tryTurnPiece :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> [[Cell]]
-    tryTurnPiece x y (dx, dy) pl op cells = undefined
-
-    changeCell :: Int -> Int -> Cell -> [[Cell]] -> [[Cell]]
-    changeCell x y pl =
-      Utils.forEachCell (\i j cell ->
-        if x == i && y == j then
-          pl
-        else if Utils.isTarget cell then
-          Empty
-        else cell
-      )
-
     player c = if Prelude.even c then Black else White
     opponent c = if Prelude.even c then White else Black
+
+putPlayer :: Int -> Int -> Cell -> Cell -> [[Cell]] -> [[Cell]]
+putPlayer x y pl op cells = foldl (\acc (dx, dy) -> tryTurnPiece (x + dx) (y + dy) (dx, dy) pl op acc) (changeCell x y pl cells) directions
+
+tryTurnPiece :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> [[Cell]]
+tryTurnPiece x y (dx, dy) pl op cells = case getCell x y cells of
+  Just cell
+    | cell == op -> tryTurnPiece (x + dx) (y + dy) (dx, dy) pl op (changeCell x y pl cells)
+  _ -> cells
+
+changeCell :: Int -> Int -> Cell -> [[Cell]] -> [[Cell]]
+changeCell x y pl =
+  Utils.forEachCell (\i j cell ->
+    if x == i && y == j then
+      pl
+    else if Utils.isTarget cell then
+      Empty
+    else cell
+  )
 
 findTargets :: GameState -> GameState
 findTargets (c, B cells) = (c, B mappedCells)
