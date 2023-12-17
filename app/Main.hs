@@ -4,6 +4,7 @@
 module Main where
 
 import qualified Types
+import qualified Utils
 import qualified Lib
 import System.Console.ANSI
 import Control.Monad.State
@@ -20,7 +21,7 @@ data IOState = IOState {
     , quit :: Bool
 }
 
-type RawState       = (Types.RawState, IOState)
+type RawState       = (Types.GameState, IOState)
 type CombinedState  = StateT RawState IO
 
 -- UNUSED
@@ -44,7 +45,7 @@ main = do
 
 runGame :: CombinedState ()
 runGame = do
-    rawState@(_, ioState) <- get
+    rawState@(gState, ioState) <- get
     if quit ioState then do
         return ()
     else do
@@ -52,6 +53,11 @@ runGame = do
         liftIO $ setCursorPosition 0 0
 
         liftIO $ printBoard rawState
+
+        if Utils.even (fst gState) then
+            liftIO $ putStr "Player 1: "
+        else
+            liftIO $ putStr "Player 2: "
         liftIO $ putStr "Enter your action (Use ? for help): "
         liftIO $ hFlush stdout
 
@@ -68,20 +74,20 @@ handleActions actions = do
     else do
         let (a : as) = actions
 
-        if M.notMember a transformer then 
+        if M.notMember a transformer then
             return ()
-        else do 
+        else do
             modify (transformer M.! a)
             handleActions as
             where
                 transformer :: Map Char (RawState -> RawState)
                 transformer = M.fromList [
-                    ('q', \(g, io) -> (g, io { quit = True })), 
-                    ('j', \(g, io) -> (g, io { coordinates = goDown $ coordinates io })), 
-                    ('k', \(g, io) -> (g, io { coordinates = goUp $ coordinates io })), 
-                    ('h', \(g, io) -> (g, io { coordinates = goLeft $ coordinates io })), 
-                    ('l', \(g, io) -> (g, io { coordinates = goRight $ coordinates io })), 
-                    ('p', \(g, io) -> (g, io)), 
+                    ('q', \(g, io) -> (g, io { quit = True })),
+                    ('j', \(g, io) -> (g, io { coordinates = goDown $ coordinates io })),
+                    ('k', \(g, io) -> (g, io { coordinates = goUp $ coordinates io })),
+                    ('h', \(g, io) -> (g, io { coordinates = goLeft $ coordinates io })),
+                    ('l', \(g, io) -> (g, io { coordinates = goRight $ coordinates io })),
+                    ('p', \(g, io) -> (execState (Lib.place (coordinates io)) g, io)),
                     ('s', \(g, io) -> (g, io { showTargets = not $ showTargets io }))]
 
                 goDown (x, y)
@@ -105,11 +111,11 @@ printBoard ((_, Types.B cells), ioState) = do
     let (x, y) = coordinates ioState
 
     let printCell cell = do {
-        if Types.isTarget cell && showTargets ioState then 
+        if Utils.isTarget cell && showTargets ioState then
             putStr . show $ cell;
-        else if Types.isTarget cell && not (showTargets ioState) then
+        else if Utils.isTarget cell && not (showTargets ioState) then
             putStr . show $ Types.Empty;
-        else 
+        else
             putStr . show $ cell;
     }
 

@@ -37,5 +37,5 @@ library
 executable othello
     import:         common-all
     main-is:        Main.hs
-    other-modules:  Lib, Types
+    other-modules:  Lib, Types, Utils
     hs-source-dirs: app, src

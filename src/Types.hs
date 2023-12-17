@@ -1,20 +1,15 @@
-module Types where
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-import Control.Monad.State (State)
+module Types where
 
 data Cell = Black | White | Empty | Target
 
-isTarget :: Cell -> Bool
-isTarget Target = True
-isTarget _      = False 
-
 newtype Counter = N Int
-  deriving Show
+  deriving (Show, Eq, Ord, Num)
+
 newtype Board   = B [[Cell]]
 
-type RawState = (Counter, Board)
-
-type GameState = State RawState
+type GameState = (Counter, Board)
 
 instance Show Cell where
   show Black  = "B"
