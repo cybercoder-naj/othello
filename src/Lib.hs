@@ -17,7 +17,18 @@ place :: (Int, Int) -> State GameState ()
 place (x, y) = do
   (N c, B cells) <- get
 
+  if not . Utils.isTarget $ cells !! x !! y then
+    return ()
+  else do
+    put (N (c + 1), putPlayer x y c cells)
+    modify findTargets
   pure ()
+
+  where
+    putPlayer :: Int -> Int -> Int -> [[Cell]] -> Board
+    putPlayer x y pl cells = B [[if x == i && y == j then player pl else if Utils.isTarget cell then Empty else cell | (cell, j) <- zip row [0..]] | (row, i) <- zip cells [0..]]
+
+    player c = if Prelude.even c then Black else White
 
 findTargets :: GameState -> GameState
 findTargets (c, B cells) = (c, B mappedCells)

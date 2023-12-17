@@ -87,7 +87,7 @@ handleActions actions = do
                     ('k', \(g, io) -> (g, io { coordinates = goUp $ coordinates io })),
                     ('h', \(g, io) -> (g, io { coordinates = goLeft $ coordinates io })),
                     ('l', \(g, io) -> (g, io { coordinates = goRight $ coordinates io })),
-                    ('p', \(g, io) -> (execState (Lib.place (coordinates io)) g, io)),
+                    ('p', \(g, io) -> (execState (Lib.place (coordinates io)) g, io { showTargets = False })),
                     ('s', \(g, io) -> (g, io { showTargets = not $ showTargets io }))]
 
                 goDown (x, y)
