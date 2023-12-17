@@ -17,7 +17,6 @@ import qualified Data.Map as M
 
 data IOState = IOState {
     coordinates :: (Int, Int)
-    , showTargets :: Bool
     , quit :: Bool
 }
 
@@ -38,7 +37,7 @@ main = do
     putStrLn "======== Welcome to Othello (Battle Reversi) ========"
     putStrLn "======== Player 1 is Black and they start ========\n"
     let gState = Lib.initGameState
-    let ioState = IOState (0, 0) False False
+    let ioState = IOState (0, 0) False
 
     _ <- runStateT runGame (gState, ioState)
     pure ()
@@ -87,8 +86,7 @@ handleActions actions = do
                     ('k', \(g, io) -> (g, io { coordinates = goUp $ coordinates io })),
                     ('h', \(g, io) -> (g, io { coordinates = goLeft $ coordinates io })),
                     ('l', \(g, io) -> (g, io { coordinates = goRight $ coordinates io })),
-                    ('p', \(g, io) -> (execState (Lib.place (coordinates io)) g, io { showTargets = False })),
-                    ('s', \(g, io) -> (g, io { showTargets = not $ showTargets io }))]
+                    ('p', \(g, io) -> (execState (Lib.place (coordinates io)) g, io ))]
 
                 goDown (x, y)
                     | x == 7    = (7, y)
@@ -111,12 +109,7 @@ printBoard ((_, Types.B cells), ioState) = do
     let (x, y) = coordinates ioState
 
     let printCell cell = do {
-        if Utils.isTarget cell && showTargets ioState then
-            putStr . show $ cell;
-        else if Utils.isTarget cell && not (showTargets ioState) then
-            putStr . show $ Types.Empty;
-        else
-            putStr . show $ cell;
+        putStr . show $ cell;
     }
 
     let innerFor j (i, cell) = if i == x && j == y then do {

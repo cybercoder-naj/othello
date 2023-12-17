@@ -22,7 +22,7 @@ place (x, y) = do
   if not . Utils.isTarget $ cells !! x !! y then
     return ()
   else do
-    put (N (c + 1), B (putPlayer x y (player c) (opponent c) cells))
+    put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
     modify findTargets
   pure ()
 
@@ -30,25 +30,29 @@ place (x, y) = do
     player c = if Prelude.even c then Black else White
     opponent c = if Prelude.even c then White else Black
 
-putPlayer :: Int -> Int -> Cell -> Cell -> [[Cell]] -> [[Cell]]
-putPlayer x y pl op cells = foldl (\acc (dx, dy) ->
-  let (build, turnovers) = runWriter (buildCellsToTurn (x + dx) (y + dy) (dx, dy) pl op cells) in
-    if build then turnPieces turnovers acc pl else acc
-  ) (changeCell x y pl cells) directions
+putPlayer :: Int -> Int -> Cell -> Cell -> State [[Cell]] ()
+putPlayer x y pl op = do
+  modify (changeCell x y pl)
+  forM_ directions
+    (\(dx, dy) -> do
+      cells <- get
+      let (build, turnovers) = runWriter (buildCellsToTurn (x + dx) (y + dy) (dx, dy) pl op cells)
+      when build $ turnPieces turnovers pl
+    )
 
-turnPieces :: [(Int, Int)] -> [[Cell]] -> Cell -> [[Cell]]
-turnPieces turnovers cells pl = 
-  Utils.forEachCell (\i j cell -> 
+turnPieces :: [(Int, Int)] -> Cell -> State [[Cell]] ()
+turnPieces turnovers pl = modify (Utils.forEachCell (\i j cell ->
     if (i, j) `elem` turnovers then
       pl
-    else 
+    else
       cell
-    ) cells
+    )
+  )
 
 buildCellsToTurn :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> Writer [(Int, Int)] Bool
 buildCellsToTurn x y (dx, dy) pl op cells = do
   case getCell x y cells of
-    Just cell 
+    Just cell
       | cell == op -> tell [(x, y)] >> buildCellsToTurn (x + dx) (y + dy) (dx, dy) pl op cells
       | cell == pl -> return True
       | Utils.isEmpty cell -> return False
