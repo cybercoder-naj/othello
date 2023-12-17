@@ -4,8 +4,7 @@ import Types
 import qualified Utils
 import Control.Monad.State
 import Control.Monad.Writer
-import Control.Monad (when)
-import Data.Maybe (isJust, fromJust, isNothing)
+import Data.Maybe (isJust)
 
 initGameState :: GameState
 initGameState = findTargets (N 0, B cells)
@@ -19,11 +18,10 @@ place :: (Int, Int) -> State GameState ()
 place (x, y) = do
   (N c, B cells) <- get
 
-  if not . Utils.isTarget $ cells !! x !! y then
-    return ()
-  else do
-    put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
-    modify findTargets
+  unless (Utils.isTarget $ cells !! x !! y) $ return ()
+
+  put (N (c + 1), B (execState (putPlayer x y (player c) (opponent c)) cells))
+  modify findTargets
   pure ()
 
   where
@@ -99,6 +97,7 @@ findTargets (c, B cells) = (c, B mappedCells)
             else go (x + dx, y + dy) (dx, dy)
           else Nothing
 
+directions :: [(Int, Int)]
 directions = [ (1, 0),(0, 1), (0, -1), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 
 getCell :: Int -> Int -> [[Cell]] -> Maybe Cell
