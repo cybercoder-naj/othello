@@ -160,7 +160,7 @@ printBoard ((_, Types.B cells, (nB, nW)), ioState) = do
         printCell cell;
         putStr " ";
     }
-    let outerFor i row = forEachIndexed innerFor (map (i,) row) >> putStrLn ""
+    let outerFor i row = putStr " " >> forEachIndexed innerFor (map (i,) row) >> putStrLn ""
 
     forEachIndexed outerFor cells
     setSGR [Reset]
