@@ -26,7 +26,14 @@ place (x, y) = do
 
   where
     putPlayer :: Int -> Int -> Int -> [[Cell]] -> Board
-    putPlayer x y pl cells = B [[if x == i && y == j then player pl else if Utils.isTarget cell then Empty else cell | (cell, j) <- zip row [0..]] | (row, i) <- zip cells [0..]]
+    putPlayer x y pl cells =
+      B (Utils.forEachCell (\i j cell ->
+        if x == i && y == j then 
+          player pl 
+        else if Utils.isTarget cell then 
+          Empty 
+        else cell   
+      ) cells)
 
     player c = if Prelude.even c then Black else White
 
@@ -34,7 +41,13 @@ findTargets :: GameState -> GameState
 findTargets (c, B cells) = (c, B mappedCells)
   where
     mappedCells :: [[Cell]]
-    mappedCells = [[if Utils.isEmpty cell && any (target (i, j)) directions then Target else cell | (cell, j) <- zip row [0..]] | (row, i) <- zip cells [0..]]
+    mappedCells = 
+      Utils.forEachCell (\i j cell -> 
+        if Utils.isEmpty cell && any (target (i, j)) directions then 
+          Target 
+        else 
+          cell 
+      ) cells
 
     directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, -1), (1, -1), (-1, 1)]
 
