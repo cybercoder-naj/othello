@@ -3,6 +3,7 @@
 module Types where
 
 data Cell = Black | White | Empty | Target
+  deriving Eq
 
 newtype Counter = N Int
   deriving (Show, Eq, Ord, Num)
