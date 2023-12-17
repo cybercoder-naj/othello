@@ -3,6 +3,7 @@ module Lib where
 import Types
 import qualified Utils
 import Control.Monad.State
+import Control.Monad.Writer
 import Control.Monad (when)
 import Data.Maybe (isJust, fromJust, isNothing)
 
@@ -30,13 +31,29 @@ place (x, y) = do
     opponent c = if Prelude.even c then White else Black
 
 putPlayer :: Int -> Int -> Cell -> Cell -> [[Cell]] -> [[Cell]]
-putPlayer x y pl op cells = foldl (\acc (dx, dy) -> tryTurnPiece (x + dx) (y + dy) (dx, dy) pl op acc) (changeCell x y pl cells) directions
+putPlayer x y pl op cells = foldl (\acc (dx, dy) ->
+  let (build, turnovers) = runWriter (buildCellsToTurn (x + dx) (y + dy) (dx, dy) pl op cells) in
+    if build then turnPieces turnovers acc pl else acc
+  ) (changeCell x y pl cells) directions
 
-tryTurnPiece :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> [[Cell]]
-tryTurnPiece x y (dx, dy) pl op cells = case getCell x y cells of
-  Just cell
-    | cell == op -> tryTurnPiece (x + dx) (y + dy) (dx, dy) pl op (changeCell x y pl cells)
-  _ -> cells
+turnPieces :: [(Int, Int)] -> [[Cell]] -> Cell -> [[Cell]]
+turnPieces turnovers cells pl = 
+  Utils.forEachCell (\i j cell -> 
+    if (i, j) `elem` turnovers then
+      pl
+    else 
+      cell
+    ) cells
+
+buildCellsToTurn :: Int -> Int -> (Int, Int) -> Cell -> Cell -> [[Cell]] -> Writer [(Int, Int)] Bool
+buildCellsToTurn x y (dx, dy) pl op cells = do
+  case getCell x y cells of
+    Just cell 
+      | cell == op -> tell [(x, y)] >> buildCellsToTurn (x + dx) (y + dy) (dx, dy) pl op cells
+      | cell == pl -> return True
+      | Utils.isEmpty cell -> return False
+      | otherwise       -> return False
+    Nothing -> return False
 
 changeCell :: Int -> Int -> Cell -> [[Cell]] -> [[Cell]]
 changeCell x y pl =
