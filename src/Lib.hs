@@ -4,6 +4,7 @@ import Types
 import qualified Utils
 import Control.Monad.State
 import Control.Monad.Writer
+import Control.Monad (forM_, when)
 import Data.Maybe (isJust)
 
 initGameState :: GameState
