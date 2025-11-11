@@ -44,6 +44,9 @@ runGame :: CombinedState ()
 runGame = do
     rawState@(gState, ioState) <- get
     if quit ioState || terminated gState then do
+        -- TODO show final state
+        -- Show the winner
+        -- Pause and exit on any keypress
         return ()
     else do
         liftIO clearFromCursorToScreenBeginning
@@ -148,6 +151,13 @@ printBoard ((_, Types.B cells, (nB, nW)), ioState) = do
 
     setSGR [SetColor Background Dull Green]
     let printCell cell = do {
+        -- TODO
+        -- Setting color for pieces
+        -- Not just show B/W/*/-
+        -- - -> empty (Green)
+        -- * -> target (Yellow)
+        -- B -> Black (Black)
+        -- W -> White (White)
         putStr . show $ cell;
     }
 
